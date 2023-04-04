@@ -21,4 +21,4 @@ Eqalert will give voice notifications for events that are defined in the `alert_
 3. Open `alert_dict.py` with your favorite text editor to define alerts
 
 ### Usage:
-`ptyhon3 eqalert.py`
+`python3 eqalert.py`
