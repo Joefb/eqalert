@@ -2,9 +2,11 @@ import os
 import time
 import alert_dict
 
-#log_path = "/home/callojoee/.wine/drive_c/Program Files (x86)/EverQuest/Logs/"
+### Enter the log path to the EQ log file ###
+log_path = "/home/callojoee/.wine/drive_c/Program Files (x86)/EverQuest/Logs/"
+### No need to modify below this line ########################################
+##############################################################################
 
-log_path = "./"
 
 ### Get the active toon by checking the current modified file ###
 def get_active_toon():
@@ -18,53 +20,55 @@ def get_active_toon():
     toon = toon_logs[0][0]
     return toon
 
-### Reads the last line of the log file ###
-def read_log(log_loc):
-    with open(log_loc, "rb") as f:
-        first = f.readline()
-        f.seek(-2, 2)
-        while f.read(1) != b"\n":
-            try:
-                f.seek(-2, 1)
-            except IOError:
-                f.seek(-1, 1)
-                if f.tell() == 0:
-                    break
-        last = f.readline()
-    return last
+### Read the log file ###
+def read_log(log_loc, last_pos):
+    with open(log_loc, "r") as f:
+        f.seek(last_pos)
+        new_lines = f.readlines()
+        last_pos = f.tell()
+    return new_lines, last_pos
 
-### Main loop ###
-while True:
-    #time.sleep(0.05)
-
-    ### Sleep at 3 seconds for testing
-    time.sleep(3)
-    os.system("clear")
+### init vars ###
+def init_vars():
     toon = get_active_toon()
-    ### Get file size - Part of my idea
-    file_size = os.path.getsize(log_path + toon)
-    last_line = read_log(log_path + toon)
-    last_line = last_line.strip()
-    last_line = last_line.decode()
-    
-    ### Added for debugging
-    print(os.path.getsize(log_path + toon)) 
-    
-    ### This was my idea. Trying to figure it out!
-    if os.path.getsize(log_path + toon) > file_size:
-    #if file_size < (os.path.getsize(log_path + toon)):
-    #if file_size != (os.path.getsize(log_path + toon)):
-    #if os.path.getsize(log_path + toon) != file_size:
-        for k in alert_dict.alerts:
-            if k in last_line:
-                os.system(alert_dict.alerts.get(k))
-                break;
+    last_toon = toon
+    log_loc = log_path + toon
+    file_size = os.path.getsize(log_loc)
+    last_pos = file_size
+    return toon, last_toon, log_loc, file_size, last_pos
+
+### main init
+toon, last_toon, log_loc, file_size, last_pos = init_vars()
+
+#### Main loop ###
+while True:
+    ### If active toon changes, re init vars ###
+    toon = get_active_toon()
+    if toon != last_toon:
+        last_toon = toon
+        time.sleep(5)
+        toon, last_toon, log_loc, file_size, last_pos = init_vars()
+
+    time.sleep(0.5)
+    os.system("clear")
+    log_loc = log_path + toon
+    file_size = os.path.getsize(log_loc)
+
+    if file_size != last_pos:
+        new_lines, last_pos = read_log(log_loc, last_pos)
+        for line in new_lines:
+            line = line.strip()
+            for k in alert_dict.alerts:
+                if k in line:
+                    os.system(alert_dict.alerts.get(k))
+                    break
+        last_pos = file_size
 
     print(f'''
 
-    Tell Me! 
+    EQ Alert 
     ==============================================================
-     File Size {file_size}
-     Toon: {toon[6:-16]} 
+     Log File: {log_loc}
+     Active Toon: {toon[6:-16]} 
     ==============================================================
             ''')
